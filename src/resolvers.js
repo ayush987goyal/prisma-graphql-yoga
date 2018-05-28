@@ -1,38 +1,36 @@
-let idCount = 0;
-const posts = [];
-
 const resolvers = {
   Query: {
     description: () => `This is the API for a simple blogging application`,
-    posts: () => posts,
-    post: (parent, args) => posts.find(post => post.id === args.id)
+    posts: (parent, args, ctx, info) => {
+      return ctx.db.query.posts({}, info);
+    },
+    post: (parent, args, ctx, info) => {
+      return ctx.db.query.post({ where: { id: args.id } }, info);
+    }
   },
   Mutation: {
-    createDraft: (parent, args) => {
-      const post = {
-        id: `post_${idCount++}`,
-        title: args.title,
-        content: args.content,
-        published: false
-      };
-      posts.push(post);
-      return post;
+    createDraft: (parent, { title, content }, ctx, info) => {
+      return ctx.db.mutation.createPost(
+        {
+          data: {
+            title,
+            content
+          }
+        },
+        info
+      );
     },
-    deletePost: (parent, args) => {
-      const postIndex = posts.findIndex(post => post.id === args.id);
-      if (postIndex > -1) {
-        const deletedPost = posts.splice(postIndex, 1);
-        return deletedPost;
-      }
-      return null;
+    deletePost: (parent, { id }, ctx, info) => {
+      return ctx.db.mutation.deletePost({ where: { id } }, info);
     },
-    publish: (parent, args) => {
-      const postIndex = posts.findIndex(post => post.id === args.id);
-      if (postIndex > -1) {
-        posts[postIndex].published = true;
-        return posts[postIndex];
-      }
-      return null;
+    publish: (parent, { id }, ctx, info) => {
+      return ctx.db.mutation.updatePost(
+        {
+          where: { id },
+          data: { published: true }
+        },
+        info
+      );
     }
   }
 };
